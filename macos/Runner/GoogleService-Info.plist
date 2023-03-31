@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>418755028159-pjnm9hhd2udj04fm82i4um9mkuga1e71.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.418755028159-pjnm9hhd2udj04fm82i4um9mkuga1e71</string>
+	<key>API_KEY</key>
+	<string>AIzaSyAXYea1dN4RMCjgPvkh9WuR32FCDi6ofco</string>
+	<key>GCM_SENDER_ID</key>
+	<string>418755028159</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.example.notificationTest</string>
+	<key>PROJECT_ID</key>
+	<string>ember-test-88722</string>
+	<key>STORAGE_BUCKET</key>
+	<string>ember-test-88722.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:418755028159:ios:31667b3e5a3176425b520a</string>
+</dict>
+</plist>
