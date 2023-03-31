@@ -1,7 +1,9 @@
+import 'package:dartz/dartz.dart' as s;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:notification_test/deep_links.dart';
 
 import 'firebase_options.dart';
 
@@ -58,23 +60,7 @@ void main() async {
   );
   //! Dynamic links
   // Check if you received the link via `getInitialLink` first
-  final PendingDynamicLinkData? initialLink = await FirebaseDynamicLinks.instance.getInitialLink();
 
-  if (initialLink != null) {
-    final Uri deepLink = initialLink.link;
-    // Example of using the dynamic link to push the user to a different screen
-    print("DEEPLINK 1: ${deepLink.path}");
-  }
-
-  FirebaseDynamicLinks.instance.onLink.listen(
-    (pendingDynamicLinkData) {
-      print("DDDDDD: ${pendingDynamicLinkData.link.query}");
-      // Set up the `onLink` event listener next as it may be received here
-      final Uri deepLink = pendingDynamicLinkData.link;
-      // Example of using the dynamic link to push the user to a different screen
-      print("DEEPLINK 2: ${deepLink.path}");
-    },
-  );
   runApp(MyApp(settings: settings, navigatorKey: navigatorKey));
 }
 
@@ -114,6 +100,36 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   @override
+  void initState() {
+    link(context);
+    super.initState();
+  }
+
+  void link(BuildContext context) {
+    final dynamicLinkStream = DeepLinkStream();
+    dynamicLinkStream.listen((s.Either<Failure, DeepLinkRoute> link) {
+      link.fold(
+        (failure) {
+          final scaffoldMessenger = ScaffoldMessenger.of(context);
+          scaffoldMessenger.showSnackBar(
+            const SnackBar(
+              content: Text("Errored out link"),
+            ),
+          );
+        },
+        (route) {
+          final scaffoldMessenger = ScaffoldMessenger.of(context);
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: Text("Received dynamic link: ${route.route()} with id ${(route as PostRoute).postId}"),
+            ),
+          );
+        },
+      );
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
@@ -134,7 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   .buildShortLink(
                     DynamicLinkParameters(
                       uriPrefix: 'https://matthewtrent.page.link',
-                      link: Uri.parse('https://matthewtrent.page.link/test/?data=5&path=99'),
+                      link: Uri.parse('https://matthewtrent.page.link/test/?id=5'),
                       socialMetaTagParameters: SocialMetaTagParameters(
                         title: "Example of a Dynamic Link",
                         imageUrl: Uri.parse("https://matthewtrent.me/assets/biz-low-res.png"),
