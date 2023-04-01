@@ -106,7 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void link(BuildContext context) {
-    final dynamicLinkStream = DeepLinkStream();
+    final dynamicLinkStream = DeepLink();
     dynamicLinkStream.listen((s.Either<Failure, DeepLinkRoute> link) {
       link.fold(
         (failure) {
@@ -146,28 +146,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           TextButton(
             onPressed: () async {
-              FirebaseDynamicLinks.instance
-                  .buildShortLink(
-                    DynamicLinkParameters(
-                      uriPrefix: 'https://matthewtrent.page.link',
-                      link: Uri.parse('https://matthewtrent.page.link/test/?id=5'),
-                      socialMetaTagParameters: SocialMetaTagParameters(
-                        title: "Example of a Dynamic Link",
-                        imageUrl: Uri.parse("https://matthewtrent.me/assets/biz-low-res.png"),
-                        description: "This link works whether the app is installed or not!",
-                      ),
-                      androidParameters: AndroidParameters(
-                        packageName: 'com.example.notification_test',
-                        minimumVersion: 1,
-                      ),
-                      iosParameters: IOSParameters(
-                        bundleId: 'com.example.notification_test',
-                        minimumVersion: '1.0.1',
-                        appStoreId: '123456789',
-                      ),
-                    ),
-                  )
-                  .then((value) => print(value.shortUrl));
+              (await DeepLink().buildLink("/post?id=55", "This is a super cool post"))
+                  .fold((link) => print("Link: $link"), (failure) => print("FAILURE!!"));
             },
             child: Text("set dyn link"),
           ),
