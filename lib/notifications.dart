@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:dartz/dartz.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class EmptyTokenFailure {}
 
@@ -10,6 +13,24 @@ class NotificationService {
   StreamSubscription<RemoteMessage>? _onMessageSubscription;
   StreamSubscription<RemoteMessage>? _onMessageOpenedAppSubscription;
   StreamSubscription<String>? _onTokenRefreshSubscription;
+
+  Future<void> initAndroidNotifications() async {
+    AndroidNotificationChannel channel = const AndroidNotificationChannel(
+      'high_importance_channel', // id
+      'High Importance Notifications', // title
+      'This channel is used for important notifications.', // description
+      importance: Importance.high,
+    );
+    FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(channel);
+    await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+      alert: true, // Required to display a heads up notification
+      badge: true,
+      sound: true,
+    );
+  }
 
   void requestPermissions({
     bool alert = true,
@@ -49,10 +70,6 @@ class NotificationService {
   void onTokenRefresh(void Function(String) callback) {
     _onTokenRefreshSubscription = _messaging.onTokenRefresh.listen(callback);
   }
-
-  // void onBackgroundMessage(Future<void> Function(RemoteMessage) callback) {
-  //   FirebaseMessaging.onBackgroundMessage(callback);
-  // }
 
   void onMessage(void Function(RemoteMessage) callback) {
     _onMessageSubscription = FirebaseMessaging.onMessage.listen(callback);

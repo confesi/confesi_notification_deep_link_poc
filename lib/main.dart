@@ -1,27 +1,39 @@
 import 'package:dartz/dartz.dart' as s;
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:notification_test/deep_links.dart';
-
+import 'package:notification_test/in_app_messages.dart';
 import 'firebase_options.dart';
+import 'message.dart';
 import 'notifications.dart';
 
 // Firebase requires this to be a top-level function
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // If you're going to use other Firebase services in the background, such as Firestore,
-  // make sure you call `initializeApp` before using other Firebase services.
+  // make sure you call `initializeApp` before using other Firebase services.d
+  InAppMessageService service = InAppMessageService();
+  // await Hive.initFlutter();
+  await service.init();
 
-  print("Handling a background message: ${message.messageId}");
+  service.addMessage(
+    Message(
+      title: message.notification!.title!,
+      body: message.notification!.body!,
+      dateTime: DateTime.now(),
+    ),
+  );
+
+  print("======================> Handling a background message: ${message.messageId}");
 }
 
 void main() async {
-  //* ADDED
   WidgetsFlutterBinding.ensureInitialized();
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   NotificationService notifications = NotificationService();
+  await notifications.initAndroidNotifications();
+  // await PathProviderPlatform.instance.setMethodCallHandler(null);
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   // print the token for dev purposes
@@ -64,7 +76,7 @@ class MyApp extends StatelessWidget {
       initialRoute: '/', // default route
       routes: {
         '/': (context) => const HomeScreen(),
-        '/details': (context) => DataScreen(data: "DATA RECEIVED!"),
+        '/details': (context) => const DataScreen(data: "DATA RECEIVED!"),
       },
       theme: ThemeData(
         primarySwatch: Colors.blue,
@@ -86,6 +98,15 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     link(context);
     super.initState();
+  }
+
+  void displayMessages() async {
+    InAppMessageService service = InAppMessageService();
+    // await Hive.initFlutter();
+    await service.init();
+    for (var i in service.getAllMessages()) {
+      print("==========================================> ${i.title} ${i.body} ${i.dateTime}");
+    }
   }
 
   void link(BuildContext context) {
@@ -133,6 +154,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   .fold((link) => print("Link: $link"), (failure) => print("FAILURE!!"));
             },
             child: Text("set dyn link"),
+          ),
+          TextButton(
+            onPressed: () => displayMessages(),
+            child: const Text("display db"),
           ),
         ],
       )),

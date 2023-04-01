@@ -28,7 +28,7 @@ class PostRoute extends DeepLinkRoute {
 class DeepLinkService {
   static const uriPrefix = "https://matthewtrent.page.link";
   static const imageUri = "https://matthewtrent.me/assets/biz-low-res.png";
-  static const linkDescription = "Check it out on Confesi";
+  static const linkDescription = "Check it out on the Confesi app";
   static const androidPackageName = "com.example.notification_test";
   static const iOSBundleId = "com.example.notification_test";
   static const iOSAppStoreId = "123456789";
