@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:dartz/dartz.dart';
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
-import 'package:flutter/services.dart';
 
 // todo: replace with custom error class
 class Failure {}
@@ -26,11 +25,7 @@ class PostRoute extends DeepLinkRoute {
 
 //! logic
 
-class DeepLink {
-  final StreamController<Either<Failure, DeepLinkRoute>> _controller =
-      StreamController<Either<Failure, DeepLinkRoute>>();
-  late StreamSubscription<Either<Failure, DeepLinkRoute>> _subscription;
-
+class DeepLinkService {
   static const uriPrefix = "https://matthewtrent.page.link";
   static const imageUri = "https://matthewtrent.me/assets/biz-low-res.png";
   static const linkDescription = "Check it out on Confesi";
@@ -38,7 +33,39 @@ class DeepLink {
   static const iOSBundleId = "com.example.notification_test";
   static const iOSAppStoreId = "123456789";
 
-  DeepLink() {
+  Future<Either<String, Failure>> buildLink(String linkData, String mediaPreviewTitle) async {
+    try {
+      ShortDynamicLink link = await FirebaseDynamicLinks.instance.buildShortLink(
+        DynamicLinkParameters(
+          uriPrefix: uriPrefix,
+          link: Uri.parse('$uriPrefix$linkData'),
+          socialMetaTagParameters: SocialMetaTagParameters(
+            title: mediaPreviewTitle,
+            imageUrl: Uri.parse(imageUri),
+            description: linkDescription,
+          ),
+          androidParameters: const AndroidParameters(
+            packageName: androidPackageName,
+          ),
+          iosParameters: const IOSParameters(
+            bundleId: iOSBundleId,
+            appStoreId: iOSAppStoreId,
+          ),
+        ),
+      );
+      return Left(link.shortUrl.toString());
+    } catch (_) {
+      return Right(Failure());
+    }
+  }
+}
+
+class DeepLinkStream {
+  final StreamController<Either<Failure, DeepLinkRoute>> _controller =
+      StreamController<Either<Failure, DeepLinkRoute>>();
+  late StreamSubscription<Either<Failure, DeepLinkRoute>> _subscription;
+
+  DeepLinkStream() {
     initDeepLink();
   }
 
@@ -75,32 +102,6 @@ class DeepLink {
     }, onError: (error) {
       _controller.addError(Left(Failure()));
     });
-  }
-
-  Future<Either<String, Failure>> buildLink(String linkData, String mediaPreviewTitle) async {
-    try {
-      ShortDynamicLink link = await FirebaseDynamicLinks.instance.buildShortLink(
-        DynamicLinkParameters(
-          uriPrefix: uriPrefix,
-          link: Uri.parse('$uriPrefix$linkData'),
-          socialMetaTagParameters: SocialMetaTagParameters(
-            title: mediaPreviewTitle,
-            imageUrl: Uri.parse(imageUri),
-            description: linkDescription,
-          ),
-          androidParameters: const AndroidParameters(
-            packageName: androidPackageName,
-          ),
-          iosParameters: const IOSParameters(
-            bundleId: iOSBundleId,
-            appStoreId: iOSAppStoreId,
-          ),
-        ),
-      );
-      return Left(link.shortUrl.toString());
-    } catch (_) {
-      return Right(Failure());
-    }
   }
 
   void dispose() {

@@ -6,93 +6,76 @@ import 'package:flutter/material.dart';
 import 'package:notification_test/deep_links.dart';
 
 import 'firebase_options.dart';
+import 'notifications.dart';
 
+// Firebase requires this to be a top-level function
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // If you're going to use other Firebase services in the background, such as Firestore,
   // make sure you call `initializeApp` before using other Firebase services.
-  await Firebase.initializeApp();
 
-  print("Handling a background message: ${message.messageId} ${message.data['path']}");
+  print("Handling a background message: ${message.messageId}");
 }
 
 void main() async {
   //* ADDED
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  FirebaseMessaging messaging = FirebaseMessaging.instance;
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  print(await messaging.getToken());
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  NotificationService notifications = NotificationService();
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-    print("YOU CLICKED THE NOTIFICATION BUDDYHAHAHHAHAHA");
+  // print the token for dev purposes
+  notifications.token.then((token) {
+    token.fold((l) => print(l), (r) => print(r));
+  });
+
+  // Subscribe to token refresh stream
+  notifications.onTokenRefresh((token) {
+    print('==========================================> New token: $token');
+  });
+
+  // Subscribe to message received stream
+  notifications.onMessage((message) {
+    print('==========================================> Message received: ${message.notification?.body}');
     navigatorKey.currentState?.pushNamed('/details');
   });
 
-  messaging.onTokenRefresh.listen((String token) {
-    print("TOKEN REFRESHED: $token");
-  });
-
-  messaging.subscribeToTopic("dogs");
-
-  // await messaging.getInitialMessage().then((value) => print("GOT GOT GOT GOT GOT GOT ${value!.notification!.title}"));
-
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    print('Got a message whilst in the foreground!');
-    print('Message data: ${message.data}');
+  // Subscribe to message opened app stream
+  notifications.onMessageOpenedApp((message) {
+    print('==========================================> Notification opened in app: ${message.notification?.body}');
     navigatorKey.currentState?.pushNamed('/details');
-
-    if (message.notification != null) {
-      print('Message also contained a notification: ${message.notification!.title} ${message.notification!.body}');
-    }
-    print("PATH ${message.data['path']}");
   });
-  NotificationSettings settings = await messaging.requestPermission(
-    alert: true,
-    announcement: false,
-    badge: true,
-    carPlay: false,
-    criticalAlert: false,
-    provisional: false,
-    sound: true,
-  );
-  //! Dynamic links
-  // Check if you received the link via `getInitialLink` first
 
-  runApp(MyApp(settings: settings, navigatorKey: navigatorKey));
+  // notifications.onBackgroundMessage
+  runApp(MyApp(navigatorKey: navigatorKey));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key, required this.settings, required this.navigatorKey});
+  const MyApp({Key? key, required this.navigatorKey}) : super(key: key);
 
-  final NotificationSettings settings;
   final GlobalKey<NavigatorState> navigatorKey;
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      navigatorKey: navigatorKey,
       title: 'Flutter Demo',
+      navigatorKey: navigatorKey,
       initialRoute: '/', // default route
       routes: {
-        // '/': (context) => HomeScreen(settings: settings),
+        '/': (context) => const HomeScreen(),
         '/details': (context) => DataScreen(data: "DATA RECEIVED!"),
       },
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: HomeScreen(settings: settings),
+      // home: const HomeScreen(),
     );
   }
 }
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, required this.settings});
-
-  final NotificationSettings settings;
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -106,7 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void link(BuildContext context) {
-    final dynamicLinkStream = DeepLink();
+    final dynamicLinkStream = DeepLinkStream();
     dynamicLinkStream.listen((s.Either<Failure, DeepLinkRoute> link) {
       link.fold(
         (failure) {
@@ -146,7 +129,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           TextButton(
             onPressed: () async {
-              (await DeepLink().buildLink("/post?id=55", "This is a super cool post"))
+              (await DeepLinkService().buildLink("/post?id=55", "This is a super cool post"))
                   .fold((link) => print("Link: $link"), (failure) => print("FAILURE!!"));
             },
             child: Text("set dyn link"),
