@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:dartz/dartz.dart';
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
+import 'package:flutter/services.dart';
 
 // todo: replace with custom error class
 class Failure {}
@@ -76,31 +77,27 @@ class DeepLink {
     });
   }
 
-  // todo: make handle errors n stuff
-  Future<Either<String, Failure>> buildLink(String linkData, String linkTitle) async {
+  Future<Either<String, Failure>> buildLink(String linkData, String mediaPreviewTitle) async {
     try {
-      return FirebaseDynamicLinks.instance
-          .buildShortLink(
-            DynamicLinkParameters(
-              uriPrefix: uriPrefix,
-              link: Uri.parse('$uriPrefix$linkData'),
-              socialMetaTagParameters: SocialMetaTagParameters(
-                title: linkTitle,
-                imageUrl: Uri.parse(imageUri),
-                description: linkDescription,
-              ),
-              androidParameters: const AndroidParameters(
-                packageName: androidPackageName,
-              ),
-              iosParameters: const IOSParameters(
-                bundleId: iOSBundleId,
-                appStoreId: iOSAppStoreId,
-              ),
-            ),
-          )
-          .then(
-            (dynamicLink) => Left(dynamicLink.shortUrl.toString()),
-          );
+      ShortDynamicLink link = await FirebaseDynamicLinks.instance.buildShortLink(
+        DynamicLinkParameters(
+          uriPrefix: uriPrefix,
+          link: Uri.parse('$uriPrefix$linkData'),
+          socialMetaTagParameters: SocialMetaTagParameters(
+            title: mediaPreviewTitle,
+            imageUrl: Uri.parse(imageUri),
+            description: linkDescription,
+          ),
+          androidParameters: const AndroidParameters(
+            packageName: androidPackageName,
+          ),
+          iosParameters: const IOSParameters(
+            bundleId: iOSBundleId,
+            appStoreId: iOSAppStoreId,
+          ),
+        ),
+      );
+      return Left(link.shortUrl.toString());
     } catch (_) {
       return Right(Failure());
     }
