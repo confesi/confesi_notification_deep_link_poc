@@ -8,6 +8,8 @@ import 'package:drift/native.dart';
 part 'message_db.g.dart';
 
 LazyDatabase _openConnection() {
+  // TODO: REMOVE; this allows for multiple instances and causes race conditions
+  driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
   return LazyDatabase(() async {
     final dbFolder = await getApplicationDocumentsDirectory();
     final file = File(path.join(dbFolder.path, "message.sqlite"));
@@ -16,7 +18,7 @@ LazyDatabase _openConnection() {
   });
 }
 
-// todo: handle exceptions
+// Does throw exceptions
 @DriftDatabase(tables: [Message])
 class AppDb extends _$AppDb {
   AppDb() : super(_openConnection());
@@ -24,11 +26,15 @@ class AppDb extends _$AppDb {
   @override
   int get schemaVersion => 1;
 
-  Future<List<MessageData>> getAllMessages() => select(message).get();
+  // return results in descending order based on time created (id always increases)
+  Future<List<MessageData>> getAllMessages() =>
+      (select(message)..orderBy([(t) => OrderingTerm(expression: t.id)])).get();
 
   Future<int> deleteMessage(int id) => (delete(message)..where((t) => t.id.equals(id))).go();
 
   Future<int> insertMessage(MessageCompanion entity) async => into(message).insert(entity);
 
   Future<int> deleteAllMessages() => delete(message).go();
+
+  void dispose() => close();
 }

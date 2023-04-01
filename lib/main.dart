@@ -1,42 +1,21 @@
+import 'package:alert_banner/widgets/alert.dart';
 import 'package:dartz/dartz.dart' as s;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:notification_test/db/in_app_message.dart';
 import 'package:notification_test/db/message_db.dart';
 import 'package:notification_test/deep_links.dart';
-import 'package:notification_test/in_app_messages.dart';
 import 'firebase_options.dart';
-import 'message.dart';
 import 'notifications.dart';
 import 'package:drift/drift.dart' as drift;
 
 // Firebase requires this to be a top-level function
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // If you're going to use other Firebase services in the background, such as Firestore,
-  // make sure you call `initializeApp` before using other Firebase services.d
-  InAppMessageService service = InAppMessageService();
-  // await Hive.initFlutter();
-  // await service.init();
-
-  // service.addMessage(
-  //   Message(
-  //     title: message.notification!.title!,
-  //     body: message.notification!.body!,
-  //     dateTime: DateTime.now(),
-  //   ),
-  // );
-
-  //! DRIFT DB STUFF
-  final entity = MessageCompanion(
-    title: drift.Value(message.notification!.title!),
-    content: const drift.Value("(created from notification)"),
-    date: drift.Value(DateTime.now()),
-  );
-  AppDb db = AppDb();
-  db.insertMessage(entity).then((value) => print("Inserted: $value"));
-
-  print("======================> Handling a background message: ${message.messageId}");
+  print("======================> BG handler called");
+  InAppMessageService inAppMessageService = InAppMessageService();
+  inAppMessageService.addMessage(message);
 }
 
 void main() async {
@@ -45,7 +24,6 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   NotificationService notifications = NotificationService();
   await notifications.initAndroidNotifications();
-  // await PathProviderPlatform.instance.setMethodCallHandler(null);
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   // print the token for dev purposes
@@ -55,18 +33,18 @@ void main() async {
 
   // Subscribe to token refresh stream
   notifications.onTokenRefresh((token) {
-    print('==========================================> New token: $token');
+    print("======================> New token: $token");
   });
 
   // Subscribe to message received stream
   notifications.onMessage((message) {
-    print('==========================================> Message received: ${message.notification?.body}');
+    print("======================> Message received in app: ${message.notification?.body}");
     navigatorKey.currentState?.pushNamed('/details');
   });
 
   // Subscribe to message opened app stream
   notifications.onMessageOpenedApp((message) {
-    print('==========================================> Notification opened in app: ${message.notification?.body}');
+    print("======================> Notification clicked: ${message.notification?.body}");
     navigatorKey.currentState?.pushNamed('/details');
   });
 
@@ -117,18 +95,23 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void displayAllMessagesFromDrift() async {
-    final messages = await _db.getAllMessages();
-    print("==================> DRIFT MESSAGES: ");
-    print(messages);
-  }
-
-  void displayMessages() async {
-    InAppMessageService service = InAppMessageService();
-    // await Hive.initFlutter();
-    await service.init();
-    for (var i in service.getAllMessages()) {
-      print("==========================================> ${i.title} ${i.body} ${i.dateTime}");
-    }
+    (await InAppMessageService().getAllMessages()).fold(
+        (l) => print(l),
+        (messageData) => showAlertBanner(
+              context,
+              () => print("TAPPPP"),
+              Container(
+                padding: const EdgeInsets.all(10),
+                color: Colors.red,
+                child: Text(
+                  messageData.map((e) => e.title).toList().toString(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ));
+    InAppMessageService().deleteAllMessages();
   }
 
   void link(BuildContext context) {
@@ -176,10 +159,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   .fold((link) => print("Link: $link"), (failure) => print("FAILURE!!"));
             },
             child: const Text("set dyn link"),
-          ),
-          TextButton(
-            onPressed: () => displayMessages(),
-            child: const Text("display db"),
           ),
           TextButton(
             onPressed: () {
