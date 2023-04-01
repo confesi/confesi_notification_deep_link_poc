@@ -46,6 +46,10 @@ dependencies:
   hive_flutter: ^1.1.0
   path_provider: ^2.0.14
   flutter_local_notifications: ^8.2.0
+  drift: ^2.6.0
+  path: ^1.8.2
+  sqlite3_flutter_libs: ^0.5.13
+  drift_dev: ^2.6.0
 
 dev_dependencies:
   flutter_test:
